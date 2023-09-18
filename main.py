@@ -1,3 +1,5 @@
+import base64
+
 from flask import Flask, request, jsonify
 import pymongo
 from gridfs import GridFS
@@ -15,6 +17,12 @@ db = client["everybar"]
 # Create or get a collection (similar to a table in SQL)
 users = db["users"]
 businesses = db['businesses']
+
+expected_fields = [
+    'name', 'phone', 'smoke', 'ratingAvg',
+    'loud', 'openTime', 'closedTime', 'location', 'hasHappyHour',
+    'menu', 'age', 'hasFood', 'isKosher'
+]
 
 
 @app.route('/add_user', methods=['POST'])
@@ -49,29 +57,23 @@ def get_user():
 
 @app.route('/add_business', methods=['POST'])
 def add_business():
-    expected_fields = [
-        'name', 'phone', 'smoke', 'ratingAvg',
-        'loud', 'openTime', 'closedTime', 'location', 'hasHappyHour',
-        'menu', 'age', 'hasFood', 'isKosher'
-    ]
     data = request.json
     myBusiness = data.get('business')
 
-    with open(myBusiness['imageUrl'], 'rb') as image_file:
-        image_data = image_file.read()
-    with open(myBusiness['logoUrl'], 'rb') as image_file:
-        logo_data = image_file.read()
-
     business_data = {}
     for field in expected_fields:
-        value = myBusiness[field]
+        value = myBusiness.get(field)
         if value is not None:
             business_data[field] = value
-        else:
-            return jsonify({"message": f"Missing data for field: {field}"}), 400
+        # Check if imageUrl and logoUrl are provided
+    if myBusiness.get('imageUrl') is not None and myBusiness.get('logoUrl') is not None:
+        with open(myBusiness['imageUrl'], 'rb') as image_file:
+            image_data = image_file.read()
+            business_data['image'] = image_data
 
-    business_data['image'] = image_data
-    business_data['logo'] = logo_data
+        with open(myBusiness['logoUrl'], 'rb') as image_file:
+            logo_data = image_file.read()
+            business_data['logo'] = logo_data
 
     businesses.insert_one(business_data)
 
@@ -84,9 +86,31 @@ def get_all_businesses():
     try:
         # Find all businesses in the database
         all_businesses = list(businesses.find({}))
-        return jsonify(all_businesses), 200
+
+        # Extract relevant data from each business document
+        serialized_businesses = []
+        for business in all_businesses:
+            if 'image' in business and 'logo' in business:
+                serialized_business = {
+                    'imageUrl': base64.b64encode(business['image']).decode('utf-8'),
+                    'logoUrl': base64.b64encode(business['logo']).decode('utf-8')
+                }
+            else:
+                serialized_business = {
+
+                }
+
+            for field in expected_fields:
+                value = business.get(field)
+                if value is not None:
+                    serialized_business[field] = value
+
+            serialized_businesses.append(serialized_business)
+
+        return jsonify(serialized_businesses), 200
 
     except Exception as e:
+        print(e)
         return jsonify({"message": f"Error occurred: {str(e)}"}), 500
 
 
