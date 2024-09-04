@@ -1,5 +1,4 @@
 import base64
-
 from flask import Flask, request, jsonify
 import pymongo
 from gridfs import GridFS
