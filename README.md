@@ -21,13 +21,17 @@ Method: POST
 
 ## Get User ##
 Endpoint: /get_user
+
 Method: GET
+
 Query Parameter: uid (user ID)
 
 ## Add Business ##
 Endpoint: /add_business
+
 Method: POST
 
 ## Get All Businesses ##
 Endpoint: /get_all_businesses
+
 Method: GET
