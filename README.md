@@ -25,6 +25,5 @@ Welcome to the EveryBar server! This server is built using Flask and serves as t
 - Method: POST
 
 ## Get All Businesses ##
-Endpoint: /get_all_businesses
-
-Method: GET
+- Endpoint: /get_all_businesses
+- Method: GET
